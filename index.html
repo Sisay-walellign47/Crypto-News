@@ -1,0 +1,1488 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Market Dashboard</title>
+    <meta name="description" content="A responsive cryptocurrency financial dashboard tracking real-time market prices, 24-hour price movements, and market caps." />
+    <meta property="og:title" content="Market Dashboard" />
+    <meta property="og:description" content="A responsive cryptocurrency financial dashboard tracking real-time market prices, 24-hour price movements, and market caps." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Fonts: Plus Jakarta Sans for UI & JetBrains Mono for Tabular Numerals -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <style>
+      :root {
+        --bg-body: #0b0f19;
+        --bg-ticker: #070a12;
+        --bg-surface: #111827;
+        --bg-surface-elevated: #151d30;
+        --bg-surface-hover: #192338;
+        --border-hairline: rgba(255, 255, 255, 0.08);
+        --border-hairline-strong: rgba(255, 255, 255, 0.16);
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --accent-green: #10b981;
+        --accent-red: #ef4444;
+        --brand-blue: #3b82f6;
+        --brand-blue-hover: #2563eb;
+        --radius-card: 12px;
+        --radius-sm: 6px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--bg-body);
+        color: var(--text-primary);
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        min-height: 100vh;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .tabular-num {
+        font-family: 'JetBrains Mono', monospace;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* 1. Global Market Stats Ticker */
+      .global-ticker-banner {
+        background-color: var(--bg-ticker);
+        border-bottom: 1px solid var(--border-hairline);
+        padding: 0.45rem 1.25rem;
+        font-size: 0.75rem;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        backdrop-filter: blur(8px);
+      }
+
+      .ticker-inner {
+        max-width: 1440px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+      }
+      .ticker-inner::-webkit-scrollbar {
+        display: none;
+      }
+
+      .ticker-group {
+        display: flex;
+        align-items: center;
+        gap: 1.75rem;
+        flex-shrink: 0;
+      }
+
+      .ticker-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .ticker-label {
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.6875rem;
+        font-weight: 600;
+      }
+
+      .ticker-val {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      .ticker-tag-terminal {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        border-right: 1px solid var(--border-hairline);
+        padding-right: 1.25rem;
+      }
+
+      /* Layout Canvas */
+      .app-wrapper {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 1.5rem 1.25rem 3.5rem;
+      }
+
+      @media (min-width: 768px) {
+        .app-wrapper {
+          padding: 2rem 2rem 4rem;
+        }
+      }
+
+      /* Single-Page Header */
+      .header-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--border-hairline);
+      }
+
+      @media (min-width: 768px) {
+        .header-container {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+        }
+      }
+
+      .header-brand-block h1 {
+        font-size: 1.625rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--text-primary);
+        line-height: 1.2;
+      }
+
+      .header-brand-block p {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        margin-top: 0.2rem;
+      }
+
+      .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.875rem;
+        flex-wrap: wrap;
+      }
+
+      .header-sync-info {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        font-family: inherit;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.15s ease-out;
+        border: 1px solid transparent;
+        white-space: nowrap;
+        user-select: none;
+      }
+
+      .btn-primary {
+        background-color: var(--brand-blue);
+        color: #ffffff;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--brand-blue-hover);
+      }
+
+      .btn-primary:active {
+        transform: translateY(1px);
+      }
+
+      .btn-outline {
+        background-color: transparent;
+        border-color: var(--border-hairline);
+        color: var(--text-secondary);
+      }
+
+      .btn-outline:hover {
+        color: var(--text-primary);
+        border-color: var(--border-hairline-strong);
+        background-color: rgba(255, 255, 255, 0.03);
+      }
+
+      .btn-retry {
+        background-color: #dc2626;
+        color: #ffffff;
+      }
+
+      .btn-retry:hover {
+        background-color: #b91c1c;
+      }
+
+      .spin-icon {
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      /* 2-Column Responsive Single-Page Layout */
+      .terminal-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.75rem;
+        width: 100%;
+        align-items: start;
+      }
+
+      @media (min-width: 1024px) {
+        .terminal-layout {
+          grid-template-columns: minmax(0, 68%) minmax(0, 32%);
+          gap: 2rem;
+        }
+      }
+
+      /* Left Main Viewport (70%) */
+      .main-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        min-width: 0;
+      }
+
+      /* Real-time Search Toolbar */
+      .terminal-toolbar {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-hairline);
+        border-radius: var(--radius-card);
+        padding: 0.75rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      @media (min-width: 640px) {
+        .terminal-toolbar {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+        }
+      }
+
+      .search-box {
+        position: relative;
+        flex: 1;
+        max-width: 440px;
+        display: flex;
+        align-items: center;
+      }
+
+      .search-box svg {
+        position: absolute;
+        left: 0.875rem;
+        width: 15px;
+        height: 15px;
+        color: var(--text-muted);
+        pointer-events: none;
+      }
+
+      .search-box input {
+        width: 100%;
+        background: var(--bg-body);
+        border: 1px solid var(--border-hairline);
+        border-radius: var(--radius-sm);
+        padding: 0.5rem 2rem 0.5rem 2.375rem;
+        color: var(--text-primary);
+        font-size: 0.8125rem;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s ease;
+      }
+
+      .search-box input:focus {
+        border-color: var(--brand-blue);
+      }
+
+      .search-box input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .search-clear-btn {
+        position: absolute;
+        right: 0.5rem;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0.25rem;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+      }
+
+      .search-clear-btn:hover {
+        color: var(--text-primary);
+      }
+
+      .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        flex-shrink: 0;
+      }
+
+      .sort-select {
+        background: var(--bg-body);
+        color: var(--text-primary);
+        border: 1px solid var(--border-hairline);
+        border-radius: var(--radius-sm);
+        padding: 0.45rem 0.625rem;
+        font-size: 0.75rem;
+        font-family: inherit;
+        outline: none;
+        cursor: pointer;
+      }
+
+      .sort-select:focus {
+        border-color: var(--brand-blue);
+      }
+
+      .match-counter {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      /* Responsive CSS Grid of Cards */
+      .crypto-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        width: 100%;
+      }
+
+      @media (min-width: 640px) {
+        .crypto-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (min-width: 1280px) {
+        .crypto-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      /* Crypto Card */
+      .crypto-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-hairline);
+        border-radius: var(--radius-card);
+        padding: 1.125rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+                    background-color 0.18s ease,
+                    border-color 0.18s ease;
+      }
+
+      .crypto-card:hover {
+        transform: translateY(-2px);
+        background: var(--bg-surface-elevated);
+        border-color: var(--border-hairline-strong);
+      }
+
+      .card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.875rem;
+      }
+
+      .coin-identity {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        min-width: 0;
+      }
+
+      .coin-image-container {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #1e293b;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .coin-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .coin-fallback-avatar {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .coin-titles {
+        min-width: 0;
+      }
+
+      .coin-name {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.25;
+      }
+
+      .coin-symbol {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .rank-index {
+        font-size: 0.6875rem;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-muted);
+        flex-shrink: 0;
+      }
+
+      .card-price-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .current-price {
+        font-size: 1.375rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text-primary);
+        line-height: 1.2;
+      }
+
+      /* 24h Change Text Colors */
+      .change-val {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+      }
+
+      .text-green {
+        color: var(--accent-green);
+      }
+
+      .text-red {
+        color: var(--accent-red);
+      }
+
+      .text-neutral {
+        color: var(--text-secondary);
+      }
+
+      /* 24h Range Bar */
+      .range-wrapper {
+        margin-bottom: 0.75rem;
+      }
+
+      .range-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.625rem;
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+        margin-bottom: 0.2rem;
+      }
+
+      .range-track {
+        height: 3px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .range-indicator {
+        height: 100%;
+        background: var(--brand-blue);
+        border-radius: 2px;
+      }
+
+      .card-footer-metrics {
+        padding-top: 0.625rem;
+        border-top: 1px solid var(--border-hairline);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.6875rem;
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .metric-label {
+        font-size: 0.625rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        display: block;
+      }
+
+      .metric-value {
+        color: var(--text-secondary);
+        font-weight: 600;
+      }
+
+      /* Right Sidebar: Fully In-Page Editorial News (No Modals, No External Page Redirects) */
+      .sidebar-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .editorial-news-section {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-hairline);
+        border-radius: var(--radius-card);
+        padding: 1.25rem;
+      }
+
+      .news-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border-hairline);
+      }
+
+      .news-section-title {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.01em;
+      }
+
+      .news-section-kicker {
+        font-size: 0.6875rem;
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .news-category-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        overflow-x: auto;
+        padding-bottom: 0.625rem;
+        margin-bottom: 1rem;
+        scrollbar-width: none;
+      }
+      .news-category-bar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .news-filter-link {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: color 0.15s ease, background 0.15s ease;
+        white-space: nowrap;
+        font-family: inherit;
+      }
+
+      .news-filter-link:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .news-filter-link.active {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      /* Editorial Feed with Inline Expansion (Everything on This Single Page) */
+      .editorial-feed {
+        display: flex;
+        flex-direction: column;
+        gap: 1.125rem;
+      }
+
+      .editorial-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        padding-bottom: 1.125rem;
+        border-bottom: 1px solid var(--border-hairline);
+      }
+
+      .editorial-card:last-child {
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .editorial-media-frame {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #1a2234;
+      }
+
+      .editorial-photo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .editorial-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.6875rem;
+        color: var(--text-muted);
+      }
+
+      .editorial-cat {
+        font-weight: 700;
+        color: var(--brand-blue);
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .editorial-headline {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.35;
+        letter-spacing: -0.01em;
+      }
+
+      .editorial-lead {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+
+      /* Inline Story Expander (Keeps User Strictly on the Single Page) */
+      .editorial-body-expanded {
+        display: none;
+        font-size: 0.75rem;
+        color: #cbd5e1;
+        line-height: 1.55;
+        padding: 0.625rem;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 6px;
+        border-left: 2px solid var(--brand-blue);
+      }
+
+      .expand-story-btn {
+        background: transparent;
+        border: none;
+        color: var(--brand-blue);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        font-family: inherit;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      .expand-story-btn:hover {
+        text-decoration: underline;
+      }
+
+      .source-attribution {
+        font-size: 0.6875rem;
+        color: var(--text-muted);
+      }
+
+      /* States */
+      .loading-state-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 1.5rem;
+        text-align: center;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-hairline);
+        border-radius: var(--radius-card);
+      }
+
+      .spinner-dual-ring {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid rgba(59, 130, 246, 0.15);
+        border-top-color: var(--brand-blue);
+        border-right-color: var(--brand-blue);
+        animation: spin 0.85s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        margin-bottom: 1rem;
+      }
+
+      .loading-text {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .loading-subtext {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+      }
+
+      .error-state-box {
+        background: #450a0a;
+        border: 1px solid #991b1b;
+        border-radius: var(--radius-card);
+        padding: 2.25rem 1.75rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .error-icon-wrapper {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #f87171;
+        margin-bottom: 0.875rem;
+      }
+
+      .error-title {
+        font-size: 1.0625rem;
+        font-weight: 700;
+        color: #fecaca;
+        margin-bottom: 0.375rem;
+      }
+
+      .error-message {
+        font-size: 0.8125rem;
+        color: #fca5a5;
+        max-width: 440px;
+        line-height: 1.5;
+        margin-bottom: 1.125rem;
+      }
+
+      .empty-search-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        color: var(--text-secondary);
+        background: var(--bg-surface);
+        border: 1px dashed var(--border-hairline);
+        border-radius: var(--radius-card);
+        grid-column: 1 / -1;
+      }
+
+      /* Clean Single-Page Footer */
+      .dashboard-footer {
+        margin-top: 3rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border-hairline);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 1. Global Market Stats Ticker -->
+    <section class="global-ticker-banner" aria-label="Global cryptocurrency market metrics">
+      <div class="ticker-inner">
+        <div class="ticker-group">
+          <span class="ticker-tag-terminal">COIN TERMINAL</span>
+          <div class="ticker-item">
+            <span class="ticker-label">Total Market Cap</span>
+            <span id="ticker-total-mcap" class="ticker-val tabular-num">$2.66T</span>
+            <span id="ticker-mcap-change" class="tabular-num text-green" style="font-weight: 600;">+2.1%</span>
+          </div>
+          <div class="ticker-item">
+            <span class="ticker-label">24h Volume</span>
+            <span id="ticker-total-vol" class="ticker-val tabular-num">$94.2B</span>
+          </div>
+          <div class="ticker-item">
+            <span class="ticker-label">BTC Dominance</span>
+            <span id="ticker-btc-dom" class="ticker-val tabular-num">58.4%</span>
+          </div>
+        </div>
+
+        <div class="ticker-group">
+          <div class="ticker-item">
+            <span class="ticker-label">Gas</span>
+            <span class="tabular-num" style="color: var(--text-primary);">14 Gwei</span>
+          </div>
+          <div class="ticker-item">
+            <span class="ticker-label">Status</span>
+            <span class="tabular-num text-green">SINGLE-PAGE APPLICATION</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="app-wrapper">
+      <!-- Header -->
+      <header class="header-container">
+        <div class="header-brand-block">
+          <h1>Market Dashboard</h1>
+          <p>Real-Time Cryptocurrency Market Cap, Price Action & Financial Wire</p>
+        </div>
+
+        <div class="header-controls">
+          <span id="last-updated-text" class="header-sync-info">Last updated: --</span>
+          <button id="refresh-btn" class="btn btn-primary" type="button" aria-label="Refresh market data">
+            <svg id="refresh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+              <path d="M16 21h5v-5"></path>
+            </svg>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 2-Column Responsive Layout (70% Left, 30% Right) -->
+      <div class="terminal-layout">
+        <!-- LEFT COLUMN (70%): Crypto Grid & Controls -->
+        <main class="main-column">
+          <!-- Real-Time Search Bar -->
+          <div class="terminal-toolbar">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                id="search-input"
+                placeholder="Search coin or symbol (e.g. BTC, Ethereum, SOL)..."
+                aria-label="Filter coins by name or symbol"
+                autocomplete="off"
+              />
+              <button id="search-clear-btn" class="search-clear-btn" type="button" aria-label="Clear search input">✕</button>
+            </div>
+
+            <div class="toolbar-right">
+              <span id="match-counter" class="match-counter">10 assets</span>
+              <select id="sort-select" class="sort-select" aria-label="Sort coins">
+                <option value="rank">Rank</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="change-desc">24h Gainers</option>
+                <option value="change-asc">24h Losers</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Loading State: Spinner and "Loading market data..." while fetching -->
+          <div id="loading-state" class="loading-state-container" role="status" aria-live="polite">
+            <div class="spinner-dual-ring" aria-hidden="true"></div>
+            <div class="loading-text">Loading market data...</div>
+            <p class="loading-subtext">Fetching live quotes and 24h market movements from CoinGecko</p>
+          </div>
+
+          <!-- Error State: Red box with "Failed to load data. Please try again." and "Retry" button -->
+          <div id="error-state" class="error-state-box" style="display: none;" role="alert">
+            <div class="error-icon-wrapper" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <h2 class="error-title">Failed to load data. Please try again.</h2>
+            <p id="error-details" class="error-message">The network request to CoinGecko could not be completed. Check your internet connection or rate limits.</p>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center;">
+              <button id="retry-btn" class="btn btn-retry" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                  <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+                  <path d="M16 21h5v-5"></path>
+                </svg>
+                <span>Retry</span>
+              </button>
+              <button id="mock-fallback-btn" class="btn btn-outline" type="button">
+                Load Offline Snapshot
+              </button>
+            </div>
+          </div>
+
+          <!-- Success State: Responsive CSS Grid of cards -->
+          <div id="crypto-grid" class="crypto-grid" style="display: none;">
+            <!-- Dynamically populated cards -->
+          </div>
+        </main>
+
+        <!-- RIGHT COLUMN (30%): Breaking Crypto News with In-Page Reading (No New Pages, No Modals) -->
+        <aside class="sidebar-column" aria-label="Financial news wire">
+          <section class="editorial-news-section">
+            <div class="news-section-header">
+              <span class="news-section-title">Breaking News</span>
+              <span class="news-section-kicker">FINANCIAL WIRE</span>
+            </div>
+
+            <!-- Category filter tabs -->
+            <div class="news-category-bar" role="tablist" aria-label="Filter news by category">
+              <button class="news-filter-link active" data-cat="all">All</button>
+              <button class="news-filter-link" data-cat="institutional">Institutional</button>
+              <button class="news-filter-link" data-cat="layer2">Layer 2</button>
+              <button class="news-filter-link" data-cat="defi">DeFi</button>
+              <button class="news-filter-link" data-cat="regulation">Regulation</button>
+            </div>
+
+            <!-- News Feed with Real Photos and Inline Reading -->
+            <div id="editorial-feed" class="editorial-feed">
+              <!-- Dynamically rendered -->
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <!-- Single-Page Dashboard Footer -->
+      <footer class="dashboard-footer">
+        <div>
+          Data Feed: CoinGecko Public Markets API
+        </div>
+        <div>
+          <span>Single-Page Financial Dashboard</span>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Self-Contained Script (No External Dependencies, Everything on One Page) -->
+    <script>
+      (function () {
+        'use strict';
+
+        var COINS_API_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false';
+        var GLOBAL_API_URL = 'https://api.coingecko.com/api/v3/global';
+
+        var NEWS_ITEMS = [
+          {
+            id: 1,
+            category: 'institutional',
+            categoryLabel: 'Institutional',
+            source: 'Bloomberg Markets',
+            author: 'Elena Vance',
+            time: '14m ago',
+            headline: 'U.S. Spot Bitcoin ETFs Register $420M Net Inflows as Institutional Demand Rebounds',
+            snippet: 'Net capital allocations across spot issuers picked up sharply led by BlackRock IBIT and Fidelity Wise Origin, driven by systematic quarterly balance sheet adjustments.',
+            body: 'Wall Street institutional investment vehicles recorded their largest single-day net inflows in three weeks, totaling $420 million across authorized participants. Market makers noted accelerated allocation from multi-strategy hedge funds, university endowments, and corporate treasuries looking to hedge macro sovereign debt issuance. Custodial holdings confirmed sustained OTC accumulation blocks during Asian and European trading hours.',
+            photo: '/src/assets/images/news_etf_trading_floor_1793884119402.jpg'
+          },
+          {
+            id: 2,
+            category: 'layer2',
+            categoryLabel: 'Layer 2',
+            source: 'CoinDesk Wire',
+            author: 'Marcus Chen',
+            time: '42m ago',
+            headline: 'Ethereum Layer-2 Blob Throughput Hits All-Time High Following Protocol Optimizations',
+            snippet: 'Rollup execution fees dipped below $0.001 across Arbitrum, Base, and Optimism as data blobs scaled past previous stress-test limits without gas friction.',
+            body: 'Average transaction settlement costs across leading optimistic and zero-knowledge rollups dropped to sub-cent parity today after coordinated client patches optimized data blob propagation. Network throughput reached over 3,400 aggregate transactions per second, with decentralized exchanges reporting zero failed executions despite elevated transaction density.',
+            photo: '/src/assets/images/news_ethereum_layer2_1793884119945.jpg'
+          },
+          {
+            id: 3,
+            category: 'defi',
+            categoryLabel: 'DeFi & AMM',
+            source: 'The Block',
+            author: 'Sarah Jenkins',
+            time: '1h ago',
+            headline: 'Solana DEX Weekly Volume Flips Major Competitors Amid High-Frequency Liquidity Surge',
+            snippet: 'Automated market makers on Solana registered $18.4B in 7-day volume, driven by deep liquidity pools and cross-chain bridge capital velocity.',
+            body: 'Decentralized exchange turnover on Solana reached a fresh weekly record, surpassing $18.4 billion across spot order books. Raydium, Orca, and Phoenix captured over 84% of total order flow, bolstered by continuous algorithmic market maker quotes and low slippage on major token trading pairs.',
+            photo: '/src/assets/images/news_defi_liquidity_1793884119837.jpg'
+          },
+          {
+            id: 4,
+            category: 'regulation',
+            categoryLabel: 'Regulation',
+            source: 'Financial Times',
+            author: 'David Hoffman',
+            time: '3h ago',
+            headline: 'Global Banking Supervisors Finalize Cross-Border Stablecoin Reserve Guidelines',
+            snippet: 'New joint central banking standards mandate daily cryptographic proof-of-reserves and high-liquidity sovereign debt backings for major dollar tokens.',
+            body: 'The Basel Committee and international central banking authorities have concluded final consultations on global reserve standards. Regulated stablecoin issuers will be required to hold 100% of collateral in overnight repo arrangements and short-dated sovereign paper, verified through automated cryptographic attestations published on a T+0 cadence.',
+            photo: '/src/assets/images/news_crypto_regulation_1793884119678.jpg'
+          }
+        ];
+
+        var SNAPSHOT_DATA = [
+          { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', image: 'https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png', current_price: 80247, market_cap: 1613686233031, market_cap_rank: 1, price_change_percentage_24h: 2.23, total_volume: 35505532208, high_24h: 81004, low_24h: 77949 },
+          { id: 'ethereum', symbol: 'eth', name: 'Ethereum', image: 'https://coin-images.coingecko.com/coins/images/279/large/ethereum.png', current_price: 3145.8, market_cap: 378291410294, market_cap_rank: 2, price_change_percentage_24h: -1.42, total_volume: 18451290310, high_24h: 3210.5, low_24h: 3090.2 },
+          { id: 'tether', symbol: 'usdt', name: 'Tether', image: 'https://coin-images.coingecko.com/coins/images/325/large/Tether.png', current_price: 1.0, market_cap: 120450912400, market_cap_rank: 3, price_change_percentage_24h: 0.02, total_volume: 48920110290, high_24h: 1.002, low_24h: 0.999 },
+          { id: 'solana', symbol: 'sol', name: 'Solana', image: 'https://coin-images.coingecko.com/coins/images/4128/large/solana.png', current_price: 198.65, market_cap: 93420119280, market_cap_rank: 4, price_change_percentage_24h: 4.85, total_volume: 8120400290, high_24h: 202.4, low_24h: 189.1 },
+          { id: 'binancecoin', symbol: 'bnb', name: 'BNB', image: 'https://coin-images.coingecko.com/coins/images/825/large/bnb-icon2_2x.png', current_price: 642.15, market_cap: 92840192300, market_cap_rank: 5, price_change_percentage_24h: -0.78, total_volume: 1420119200, high_24h: 651.0, low_24h: 636.5 },
+          { id: 'ripple', symbol: 'xrp', name: 'XRP', image: 'https://coin-images.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png', current_price: 0.6284, market_cap: 35410290110, market_cap_rank: 6, price_change_percentage_24h: 1.15, total_volume: 1980220100, high_24h: 0.641, low_24h: 0.618 },
+          { id: 'usd-coin', symbol: 'usdc', name: 'USDC', image: 'https://coin-images.coingecko.com/coins/images/6319/large/usdc.png', current_price: 0.9999, market_cap: 35120490100, market_cap_rank: 7, price_change_percentage_24h: -0.01, total_volume: 7210490200, high_24h: 1.001, low_24h: 0.999 },
+          { id: 'dogecoin', symbol: 'doge', name: 'Dogecoin', image: 'https://coin-images.coingecko.com/coins/images/5/large/dogecoin.png', current_price: 0.1685, market_cap: 24650190200, market_cap_rank: 8, price_change_percentage_24h: 7.32, total_volume: 3410290100, high_24h: 0.174, low_24h: 0.155 },
+          { id: 'cardano', symbol: 'ada', name: 'Cardano', image: 'https://coin-images.coingecko.com/coins/images/975/large/cardano.png', current_price: 0.3845, market_cap: 13780190200, market_cap_rank: 9, price_change_percentage_24h: -2.14, total_volume: 489201100, high_24h: 0.398, low_24h: 0.379 },
+          { id: 'tron', symbol: 'trx', name: 'TRON', image: 'https://coin-images.coingecko.com/coins/images/1094/large/tron-logo.png', current_price: 0.1624, market_cap: 14060190400, market_cap_rank: 10, price_change_percentage_24h: 0.84, total_volume: 412090100, high_24h: 0.165, low_24h: 0.160 }
+        ];
+
+        var coinsData = [];
+        var activeCategory = 'all';
+
+        // DOM elements
+        var loadingEl = document.getElementById('loading-state');
+        var errorEl = document.getElementById('error-state');
+        var gridEl = document.getElementById('crypto-grid');
+        var refreshBtn = document.getElementById('refresh-btn');
+        var refreshIcon = document.getElementById('refresh-icon');
+        var retryBtn = document.getElementById('retry-btn');
+        var mockBtn = document.getElementById('mock-fallback-btn');
+        var searchInput = document.getElementById('search-input');
+        var searchClearBtn = document.getElementById('search-clear-btn');
+        var sortSelect = document.getElementById('sort-select');
+        var matchCounterEl = document.getElementById('match-counter');
+        var lastUpdatedEl = document.getElementById('last-updated-text');
+        var tickerMcapEl = document.getElementById('ticker-total-mcap');
+        var tickerMcapChangeEl = document.getElementById('ticker-mcap-change');
+        var tickerVolEl = document.getElementById('ticker-total-vol');
+        var tickerBtcDomEl = document.getElementById('ticker-btc-dom');
+        var editorialFeedEl = document.getElementById('editorial-feed');
+
+        function formatUSD(num) {
+          if (num === null || num === undefined || isNaN(num)) return '$0.00';
+          if (num < 0.0001) return '$' + Number(num).toFixed(6);
+          if (num < 1) return '$' + Number(num).toFixed(4);
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }).format(num);
+        }
+
+        function formatCompactNumber(num) {
+          if (!num || isNaN(num)) return 'N/A';
+          if (num >= 1e12) return '$' + (num / 1e12).toFixed(2) + 'T';
+          if (num >= 1e9) return '$' + (num / 1e9).toFixed(2) + 'B';
+          if (num >= 1e6) return '$' + (num / 1e6).toFixed(2) + 'M';
+          return '$' + Number(num).toLocaleString('en-US');
+        }
+
+        function formatChange(val) {
+          if (val === null || val === undefined || isNaN(val)) return '0.00%';
+          var sign = val > 0 ? '+' : '';
+          return sign + Number(val).toFixed(2) + '%';
+        }
+
+        function showLoading() {
+          loadingEl.style.display = 'flex';
+          errorEl.style.display = 'none';
+          gridEl.style.display = 'none';
+          refreshIcon.classList.add('spin-icon');
+          refreshBtn.disabled = true;
+        }
+
+        function showError(msg) {
+          loadingEl.style.display = 'none';
+          errorEl.style.display = 'flex';
+          gridEl.style.display = 'none';
+          refreshIcon.classList.remove('spin-icon');
+          refreshBtn.disabled = false;
+          if (msg) {
+            var detailEl = document.getElementById('error-details');
+            if (detailEl) detailEl.textContent = msg;
+          }
+        }
+
+        function showSuccess() {
+          loadingEl.style.display = 'none';
+          errorEl.style.display = 'none';
+          gridEl.style.display = 'grid';
+          refreshIcon.classList.remove('spin-icon');
+          refreshBtn.disabled = false;
+        }
+
+        function fetchGlobalStats() {
+          fetch(GLOBAL_API_URL, { headers: { Accept: 'application/json' } })
+            .then(function (res) {
+              if (!res.ok) throw new Error('Global fetch failed');
+              return res.json();
+            })
+            .then(function (json) {
+              if (json && json.data) {
+                var d = json.data;
+                var totalMcap = d.total_market_cap && d.total_market_cap.usd ? d.total_market_cap.usd : null;
+                var totalVol = d.total_volume && d.total_volume.usd ? d.total_volume.usd : null;
+                var btcDom = d.market_cap_percentage && d.market_cap_percentage.btc ? d.market_cap_percentage.btc : null;
+                var mcapChange = d.market_cap_change_percentage_24h_usd;
+
+                if (totalMcap) tickerMcapEl.textContent = formatCompactNumber(totalMcap);
+                if (totalVol) tickerVolEl.textContent = formatCompactNumber(totalVol);
+                if (btcDom) tickerBtcDomEl.textContent = Number(btcDom).toFixed(1) + '%';
+                if (typeof mcapChange === 'number') {
+                  tickerMcapChangeEl.textContent = (mcapChange >= 0 ? '+' : '') + mcapChange.toFixed(1) + '%';
+                  tickerMcapChangeEl.className = 'tabular-num ' + (mcapChange >= 0 ? 'text-green' : 'text-red');
+                }
+              }
+            })
+            .catch(function () {
+              computeGlobalFromCoins();
+            });
+        }
+
+        function computeGlobalFromCoins() {
+          if (!coinsData || coinsData.length === 0) return;
+          var totalTopCap = coinsData.reduce(function (sum, c) { return sum + (c.market_cap || 0); }, 0);
+          var totalTopVol = coinsData.reduce(function (sum, c) { return sum + (c.total_volume || 0); }, 0);
+          var btc = coinsData.find(function (c) { return c.symbol === 'btc' || c.id === 'bitcoin'; });
+
+          var estimatedTotalMcap = totalTopCap ? totalTopCap / 0.84 : 2660000000000;
+          tickerMcapEl.textContent = formatCompactNumber(estimatedTotalMcap);
+          tickerVolEl.textContent = formatCompactNumber(totalTopVol ? totalTopVol * 1.25 : 94200000000);
+
+          if (btc && btc.market_cap && estimatedTotalMcap) {
+            var btcPct = (btc.market_cap / estimatedTotalMcap) * 100;
+            tickerBtcDomEl.textContent = btcPct.toFixed(1) + '%';
+          }
+        }
+
+        function fetchCryptoData() {
+          showLoading();
+
+          var controller = new AbortController();
+          var timeoutId = setTimeout(function () {
+            controller.abort();
+          }, 12000);
+
+          fetch(COINS_API_URL, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            signal: controller.signal
+          })
+            .then(function (response) {
+              clearTimeout(timeoutId);
+              if (!response.ok) {
+                var errDetail = 'HTTP ' + response.status + ' (' + response.statusText + ')';
+                if (response.status === 429) {
+                  errDetail = 'CoinGecko API rate limit reached (HTTP 429). Please wait a moment or load the snapshot.';
+                }
+                throw new Error(errDetail);
+              }
+              return response.json();
+            })
+            .then(function (data) {
+              if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('Received invalid data format from market endpoint.');
+              }
+              coinsData = data;
+              updateTimestamps();
+              renderGrid();
+              fetchGlobalStats();
+              showSuccess();
+            })
+            .catch(function (error) {
+              clearTimeout(timeoutId);
+              console.warn('Market fetch error:', error);
+              var msg = 'Failed to load data. Please try again.';
+              if (error.name === 'AbortError') {
+                msg = 'Request timed out while connecting to CoinGecko. Please try again.';
+              } else if (error.message) {
+                msg = error.message;
+              }
+              showError(msg);
+            });
+        }
+
+        function updateTimestamps() {
+          var now = new Date();
+          var timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          lastUpdatedEl.textContent = 'Last updated: ' + timeStr;
+        }
+
+        function renderGrid() {
+          gridEl.innerHTML = '';
+          var query = (searchInput.value || '').trim().toLowerCase();
+          var sortMode = sortSelect.value || 'rank';
+
+          if (query.length > 0) {
+            searchClearBtn.style.display = 'inline-flex';
+          } else {
+            searchClearBtn.style.display = 'none';
+          }
+
+          var filtered = coinsData.filter(function (coin) {
+            if (!query) return true;
+            var nameMatch = coin.name && coin.name.toLowerCase().indexOf(query) !== -1;
+            var symbolMatch = coin.symbol && coin.symbol.toLowerCase().indexOf(query) !== -1;
+            return nameMatch || symbolMatch;
+          });
+
+          matchCounterEl.textContent = filtered.length + ' of ' + coinsData.length + ' assets';
+
+          filtered.sort(function (a, b) {
+            if (sortMode === 'price-desc') return (b.current_price || 0) - (a.current_price || 0);
+            if (sortMode === 'price-asc') return (a.current_price || 0) - (b.current_price || 0);
+            if (sortMode === 'change-desc') return (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0);
+            if (sortMode === 'change-asc') return (a.price_change_percentage_24h || 0) - (b.price_change_percentage_24h || 0);
+            return (a.market_cap_rank || 0) - (b.market_cap_rank || 0);
+          });
+
+          if (filtered.length === 0) {
+            var empty = document.createElement('div');
+            empty.className = 'empty-search-state';
+            empty.innerHTML =
+              '<p style="font-size: 0.9375rem; font-weight: 600; color: #f8fafc; margin-bottom: 0.25rem;">No assets matched "' +
+              escapeHTML(query) +
+              '"</p><p style="font-size: 0.75rem;">Try searching another ticker symbol or currency name.</p>';
+            gridEl.appendChild(empty);
+            return;
+          }
+
+          filtered.forEach(function (coin, idx) {
+            var card = createCoinCard(coin, idx);
+            gridEl.appendChild(card);
+          });
+        }
+
+        function escapeHTML(str) {
+          return str.replace(/[&<>'"]/g, function (tag) {
+            return {
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              "'": '&#39;',
+              '"': '&quot;'
+            }[tag] || tag;
+          });
+        }
+
+        function createCoinCard(coin, index) {
+          var card = document.createElement('article');
+          card.className = 'crypto-card';
+
+          var change24h = coin.price_change_percentage_24h;
+          var isPositive = typeof change24h === 'number' && change24h > 0;
+          var isNegative = typeof change24h === 'number' && change24h < 0;
+
+          var changeColorClass = isPositive ? 'text-green' : (isNegative ? 'text-red' : 'text-neutral');
+          var arrowIcon = isPositive ? '↑' : (isNegative ? '↓' : '');
+
+          var symbolUpper = (coin.symbol || '').toUpperCase();
+          var rankNum = coin.market_cap_rank || (index + 1);
+          var rankFormatted = rankNum < 10 ? '0' + rankNum : '' + rankNum;
+
+          var low = coin.low_24h || (coin.current_price * 0.97);
+          var high = coin.high_24h || (coin.current_price * 1.03);
+          var rangePercent = 50;
+          if (high > low) {
+            rangePercent = Math.max(5, Math.min(95, ((coin.current_price - low) / (high - low)) * 100));
+          }
+
+          card.innerHTML =
+            '<div class="card-top">' +
+              '<div class="coin-identity">' +
+                '<div class="coin-image-container">' +
+                  '<img ' +
+                    'src="' + (coin.image || '') + '" ' +
+                    'alt="' + (coin.name || 'Coin') + ' logo" ' +
+                    'class="coin-image" ' +
+                    'loading="lazy" ' +
+                    'referrerpolicy="no-referrer" ' +
+                    'onerror="this.onerror=null; this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';" ' +
+                  '/>' +
+                  '<div class="coin-fallback-avatar" style="display: none;">' +
+                    symbolUpper.slice(0, 3) +
+                  '</div>' +
+                '</div>' +
+                '<div class="coin-titles">' +
+                  '<div class="coin-name" title="' + (coin.name || '') + '">' + (coin.name || 'Unknown') + '</div>' +
+                  '<div class="coin-symbol">' + symbolUpper + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<span class="rank-index">' + rankFormatted + '</span>' +
+            '</div>' +
+
+            '<div class="card-price-row">' +
+              '<div class="current-price tabular-num">' + formatUSD(coin.current_price) + '</div>' +
+              '<div class="change-val ' + changeColorClass + '" aria-label="24h Change: ' + formatChange(change24h) + '">' +
+                '<span>' + arrowIcon + '</span>' +
+                '<span>' + formatChange(change24h) + '</span>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="range-wrapper">' +
+              '<div class="range-labels">' +
+                '<span>24h L: ' + formatUSD(low) + '</span>' +
+                '<span>24h H: ' + formatUSD(high) + '</span>' +
+              '</div>' +
+              '<div class="range-track">' +
+                '<div class="range-indicator" style="width: ' + rangePercent.toFixed(1) + '%;"></div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="card-footer-metrics">' +
+              '<div>' +
+                '<span class="metric-label">Market Cap</span>' +
+                '<span class="metric-value">' + formatCompactNumber(coin.market_cap) + '</span>' +
+              '</div>' +
+              '<div style="text-align: right;">' +
+                '<span class="metric-label">24h Volume</span>' +
+                '<span class="metric-value">' + formatCompactNumber(coin.total_volume) + '</span>' +
+              '</div>' +
+            '</div>';
+
+          return card;
+        }
+
+        // Render Editorial News Feed with Inline Expand (Stays on This Single Page)
+        function renderNews() {
+          editorialFeedEl.innerHTML = '';
+          var filteredNews = NEWS_ITEMS.filter(function (item) {
+            if (activeCategory === 'all') return true;
+            return item.category === activeCategory;
+          });
+
+          filteredNews.forEach(function (news) {
+            var article = document.createElement('article');
+            article.className = 'editorial-card';
+
+            article.innerHTML =
+              '<div class="editorial-media-frame">' +
+                '<img ' +
+                  'src="' + news.photo + '" ' +
+                  'alt="' + escapeHTML(news.headline) + '" ' +
+                  'class="editorial-photo" ' +
+                  'loading="lazy" ' +
+                  'referrerpolicy="no-referrer" ' +
+                '/>' +
+              '</div>' +
+              '<div class="editorial-meta">' +
+                '<span class="editorial-cat">' + news.categoryLabel + '</span>' +
+                '<span aria-hidden="true">·</span>' +
+                '<span>' + news.time + '</span>' +
+                '<span aria-hidden="true">·</span>' +
+                '<span>' + news.author + '</span>' +
+              '</div>' +
+              '<h3 class="editorial-headline">' + news.headline + '</h3>' +
+              '<p class="editorial-lead">' + news.snippet + '</p>' +
+              '<div class="editorial-body-expanded">' + news.body + '</div>' +
+              '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.125rem;">' +
+                '<button type="button" class="expand-story-btn">' +
+                  '<span>Read Full Wire</span>' +
+                  '<span>↓</span>' +
+                '</button>' +
+                '<span class="source-attribution">' + news.source + '</span>' +
+              '</div>';
+
+            var expandBtn = article.querySelector('.expand-story-btn');
+            var expandedBody = article.querySelector('.editorial-body-expanded');
+
+            expandBtn.addEventListener('click', function () {
+              var isExpanded = expandedBody.style.display === 'block';
+              if (isExpanded) {
+                expandedBody.style.display = 'none';
+                expandBtn.innerHTML = '<span>Read Full Wire</span> <span>↓</span>';
+              } else {
+                expandedBody.style.display = 'block';
+                expandBtn.innerHTML = '<span>Collapse Story</span> <span>↑</span>';
+              }
+            });
+
+            editorialFeedEl.appendChild(article);
+          });
+        }
+
+        // News Filter Tab Buttons
+        var filterBtns = document.querySelectorAll('.news-filter-link');
+        filterBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            filterBtns.forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            activeCategory = btn.getAttribute('data-cat') || 'all';
+            renderNews();
+          });
+        });
+
+        // Event Listeners
+        refreshBtn.addEventListener('click', function () {
+          fetchCryptoData();
+        });
+
+        retryBtn.addEventListener('click', function () {
+          fetchCryptoData();
+        });
+
+        mockBtn.addEventListener('click', function () {
+          coinsData = JSON.parse(JSON.stringify(SNAPSHOT_DATA));
+          updateTimestamps();
+          computeGlobalFromCoins();
+          renderGrid();
+          showSuccess();
+        });
+
+        searchInput.addEventListener('input', function () {
+          renderGrid();
+        });
+
+        searchClearBtn.addEventListener('click', function () {
+          searchInput.value = '';
+          searchInput.focus();
+          renderGrid();
+        });
+
+        sortSelect.addEventListener('change', function () {
+          renderGrid();
+        });
+
+        // Initialize on load
+        renderNews();
+        fetchCryptoData();
+      })();
+    </script>
+  </body>
+</html>

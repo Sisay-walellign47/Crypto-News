@@ -1,0 +1,6 @@
+{
+  "name": "Market Dashboard",
+  "description": "A responsive cryptocurrency financial dashboard tracking real-time market prices, 24-hour price movements, and market caps.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
